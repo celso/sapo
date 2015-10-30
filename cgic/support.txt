@@ -1,0 +1,29 @@
+Support for CGIC
+----------------
+
+   ____
+  /    \
+ | STOP |
+  \____/
+  
+    Are you getting a "server error," indicating that your web server
+    "cannot allow POST to this URL," or a similar message? YOU MUST
+    CONFIGURE YOUR WEB SERVER TO ALLOW CGI PROGRAMS, AND YOU MUST
+    INSTALL CGI PROGRAMS IN THE LOCATION (OR WITH THE EXTENSION) THAT
+    YOUR WEB SERVER EXPECTS TO SEE. Please don't send me email about
+    this. It is strictly between you and your web server's documentation,
+    or between you and your ISP. Thanks!
+
+ 
+Anyone can mail questions about the gd and cgic libraries to 
+boutell@boutell.com. However, I receive a very large volume of email on 
+many subjects, and while I do my best to respond to all queries this can 
+take some time. Sometimes the response must take the form of an eventual 
+new release or an addition to a FAQ or other document, as opposed to an 
+detailed individual response.
+
+The old "priority support" offer for CGIC has been discontinued,
+due to the impracticality of billing for it.
+
+-Thomas Boutell, boutell@boutell.com
+

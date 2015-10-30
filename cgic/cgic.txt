@@ -1,0 +1,1464 @@
+
+                  cgic: an ANSI C library for CGI Programming
+                                       
+By [1]Thomas Boutell
+
+   _[2]The LATEST documentation is available here. Check often for new
+   releases._
+   
+  Table of Contents
+  
+   _NOTICE: If your current version is 1.05 or earlier, the current
+   release contains important security fixes. Upgrading is STRONGLY
+   RECOMMENDED._ (Yes, the upgrade is free.)
+   
+     * [3]Credits and license terms
+     * [4]How to get support
+     * [5]What's new in version 1.07?
+     * [6]What's new in version 1.06?
+     * [7]What is cgic?
+     * [8]Obtaining cgic
+     * [9]Building and testing cgic: a sample application
+     * [10]What to do if it won't compile
+     * [11]How to write a cgic application
+     * [12]How can I generate images from my cgic application?
+     * [13]CGI debugging features: using capture
+     * [14]cgic function reference
+     * [15]cgic variable reference
+     * [16]cgic result code reference
+     * [17]cgic quick index
+       
+  Credits and License Terms
+  
+   cgic can be used free of charge, _provided that a credit notice is
+   provided online._ Alternatively, a nonexclusive Commercial License can
+   be purchased, which grants the right to use cgic without a public
+   credit notice.
+   
+   Please see the file [18]license.txt for the details of the Basic
+   License and Commercial License, including ordering information for the
+   Commercial License.
+   
+   Thanks are due to Ken Holervich, Jon Ribbens and other CGIC users who
+   have corresponded over the years.
+   
+  How to Get Support
+  
+    STOP! READ THIS FIRST! REALLY!
+    
+   Are you getting a "server error," indicating that your web server
+   "cannot allow POST to this URL," or a similar message? _YOU MUST
+   CONFIGURE YOUR WEB SERVER TO ALLOW CGI PROGRAMS, AND YOU MUST INSTALL
+   CGI PROGRAMS IN THE LOCATION (OR WITH THE EXTENSION) THAT YOUR WEB
+   SERVER EXPECTS TO SEE._ Please don't send me email about this. It is
+   strictly between you and your web server's documentation, or between
+   you and your ISP. Thanks!
+   
+   Anyone can mail questions about the gd and cgic libraries to
+   boutell@boutell.com. However, I receive a very large volume of email
+   on many subjects, and while I do my best to respond to all queries
+   this can take some time. Sometimes the response must take the form of
+   an eventual new release or an addition to a FAQ or other document, as
+   opposed to an detailed individual response.
+   
+   The old "priority support" offer for CGIC has been discontinued, due
+   to the impracticality of billing for it.
+   
+  What's new in version 1.07?
+  
+   A problem with the cgiFormString and related functions has been
+   corrected. These functions were previously incorrectly returning
+   cgiFormTruncated in cases where the returned string fit the buffer
+   exactly.
+   
+  What's new in version 1.06?
+  
+   1. A potentially significant buffer overflow problem has been
+   corrected. Jon Ribbens correctly pointed out to me (and to the
+   Internet's bugtraq mailing list) that the cgiFormEntryString function,
+   which is used directly or indirectly by almost all CGIC programs, can
+   potentially write past the buffer passed to it by the programmer. This
+   bug has been corrected. Upgrading to version 1.06 is _strongly
+   recommended._
+   
+   2. The function cgiSaferSystem() has been removed entirely. This
+   function escaped only a few metacharacters, while most shells have
+   many, and there was no way to account for the many different operating
+   system shells that might be in use on different operating systems.
+   Since this led to a false sense of security, the function has been
+   removed. It is our recommendation that user input should never be
+   passed directly on the command line unless it has been carefully shown
+   to contain only characters regarded as safe and appropriate by the
+   programmer. Even then, it is better to design your utilities to accept
+   their input from standard input rather than the command line.
+   
+  What's new in version 1.05?
+  
+   Non-exclusive commercial license fee reduced to $200.
+   
+  What's new in version 1.04?
+  
+   For consistency with other packages, the standard Makefile now
+   produces a true library for cgic (libcgic.a).
+   
+  What's new in version 1.03?
+  
+   Version 1.03 sends line feeds only (ascii 10) to end Content-type:,
+   Status:, and other HTTP protocol output lines, instead of CR/LF
+   sequences. The standard specifies CR/LF. Unfortunately, too many
+   servers reject CR/LF to make implementation of that standard
+   practical. No server tested ever rejects LF alone in this context.
+   
+  What's new in version 1.02?
+  
+   Version 1.02 corrects bugs in previous versions:
+     * [19]cgiFormDoubleBounded specified its arguments in the wrong
+       order, with surprising results. This bug has been corrected.
+     * Many small changes have been made to increase compatibility. cgic
+       now compiles with no warnings under the compilers available at
+       boutell.com.
+       
+  What's new in version 1.01?
+  
+   Version 1.01 adds no major functionality but corrects significant bugs
+   and incompatibilities:
+     * [20]cgiFormInteger, [21]cgiFormIntegerBounded, [22]cgiFormDouble
+       and [23]cgiFormDoubleBounded now accept negative numbers properly.
+       They also accept positive numbers with an explicit + sign.
+     * Hex values containing the digit 9 are now properly decoded.
+     * [24]cgiFormString now represents each newline as a single line
+       feed (ascii 10 decimal) as described in the documentation, not a
+       carriage return (ascii 13 decimal) as in version 1.0. The latter
+       approach pleased no one.
+     * [25]cgiFormString and [26]cgiFormStringNoNewlines no longer
+       erroneously return cgiFormEmpty in place of cgiFormSuccess.
+     * The main() function of cgic now flushes standard output and sleeps
+       for one second before exiting in order to inhibit problems with
+       the completion of I/O on some platforms. This was not a cgic bug
+       per se, but has been reported as a common problem with CGI when
+       used with the CERN server. This change should improve
+       compatibility.
+     * The single selection example in the testform.html example now
+       works properly. This was an error in the form itself, not cgic.
+     * [27]cgiRemoteUser and [28]cgiRemoteIdent are now documented
+       accurately. They were reversed earlier.
+       
+  What is cgic?
+  
+   cgic is an ANSI C-language library for the creation of CGI-based World
+   Wide Web applications. For basic information about the CGI standard,
+   see the [29]CGI documentation at NCSA.
+   
+   cgic performs the following tasks:
+     * Parses form data, correcting for defective and/or inconsistent
+       browsers
+     * Transparently accepts both GET and POST form data
+     * Handles line breaks in form fields in a consistent manner
+     * Provides string, integer, floating-point, and single- and
+       multiple-choice functions to retrieve form data
+     * Provides bounds checking for numeric fields
+     * Loads CGI environment variables into C strings which are always
+       non-null
+     * Provides a way to capture CGI situations for replay in a debugging
+       environment
+       
+   cgic should be compatible with any CGI-compliant server environment.
+   
+  Obtaining cgic
+  
+   cgic is distributed via the web in two forms: as a Windows-compatible
+   .ZIP file, and as a gzipped tar file. Most users of Windows and
+   related operating systems have access to 'unzip' or 'pkunzip'. All
+   modern Unix systems come with 'gunzip' and 'tar' as standard
+   equipment, and gzip/gunzip is not difficult to find if yours does not.
+   Versions of these programs for other operating systems are widely
+   available if you do not already have them.
+   
+   _Important:_ to use cgic, you will need an ANSI-standard C compiler.
+   The Sun cc distributed with SunOS 4.1.3 is _not_ ANSI-standard. Unix
+   users may wish to obtain gcc, which is free and widely available, or
+   purchase Sun's development package, which also includes a proper
+   compiler. Users of Windows-related operating systems should not have
+   ANSI C-related problems as all of the popular compilers follow the
+   ANSI standard.
+   
+   _Note for Windows Programmers:_ cgic should work in a 16-bit
+   environment but is not designed to cater to such an environment. Form
+   fields which require more than 64K individually will not work as
+   expected unless the huge memory model is used. Using a 32-bit compiler
+   and operating environment is strongly recommended.
+   
+   Your web browser should inquire whether to save the file to disk when
+   you select one of the links below. Under Unix and compatible operating
+   systems, save it, then issue the following commands to unpack it:
+
+gunzip cgic107.tar.gz
+tar -xf cgic107.tar
+
+   This should produce the subdirectory 'cgic107', which will contain the
+   complete cgic distribution for version 1.07, including a copy of this
+   documentation in the file cgic.html.
+   
+   Under Windows and compatible operating systems, save it, open a DOS
+   window, and issue the following commands to unpack it:
+
+pkunzip /d cgic107.zip
+
+   This command also produces the subdirectory 'cgic107', which will
+   contain the complete cgic distribution for version 1.07, including a
+   copy of this documentation in the file CGIC.HTM.
+   
+   cgic is available via the web from www.boutell.com:
+     * [30]Obtain cgic: gzipped tar file
+     * [31]Obtain cgic: .ZIP file
+       
+  Building cgic: a sample application
+  
+   The sample application 'cgictest.c' is provided as part of the cgic
+   distribution. This CGI program accepts input submitted by the form
+   cgictest.html.
+   
+   On a Unix system, you can build cgictest simply by typing 'make
+   cgictest'. cgic.c and cgictest.c will be compiled and linked together
+   to produce the cgictest application. Under non-Unix operating systems,
+   you will need to create and compile an appropriate project containing
+   the files cgic.c and cgictest.c.
+   
+   _IMPORTANT:_ after compiling cgictest, you will need to place it in a
+   location on your server system which is designated by your server
+   administrator as an appropriate location for CGI scripts. Also, the
+   URL of the action of the sample form in testform.html must be changed
+   to correctly indicate the location of cgictest on your web server. The
+   right locations for CGI programs vary greatly from one server to
+   another. Resolving this issue is between you, your web server
+   administrator, and your web server documentation. Before submitting a
+   bug report for cgic, make certain that the CGI example programs which
+   came with your server _do_ work for you. Otherwise it is very likely
+   that you have a server configuration problem.
+   
+   Once you have moved cgictest to an appropriate cgi directory and
+   edited form.html to properly refer to its location, use the web
+   browser of your choice to access form.html. Fill out the various
+   fields in any manner you wish, then select the SUBMIT button.
+   
+   If all goes well, cgictest will respond with a page which indicates
+   the various settings you submitted. If not, please see the second
+   paragraph above.
+   
+  What to do if it won't compile
+  
+     * _Are you using Visual C++ or Borland C++? Did you forget to add
+       cgic.c to your project?_
+     * _Make sure you are using an ANSI C or C++ compiler._ (All of the
+       Windows compilers are ANSI C compliant.)
+     * If your compiler can't find the #include file unistd.h, define the
+       preprocessor macro NO_UNISTD and recompile. (A place for defining
+       macros is provided in the project settings of all the Windows
+       compilers.)
+       
+   If none of the above proves effective, please see the section
+   regarding [32]support.
+   
+  How to write a cgic application
+  
+   _Note: _All cgic applications must be linked to the cgic.c module
+   itself. How to do this depends on your operating system; under Unix,
+   just use the provided Makefile as an example.
+   
+   Since all CGI applications must perform certain initial tasks, such as
+   parsing form data and examining environment variables, the cgic
+   library provides its own main() function. When you write applications
+   that use cgic, you will begin your own programs by writing a cgiMain()
+   function, which cgic will invoke when the initial cgi work has been
+   successfully completed. Your program must also be sure to #include the
+   file cgic.h.
+   
+   _Important:_ if you write your own main() function, your program will
+   not link properly. Your own code should begin with cgiMain(). The
+   library provides main() for you.
+   
+   Consider the cgiMain function of cgictest.c:
+   
+int cgiMain() {
+#if DEBUG
+        /* Load a saved CGI scenario if we're debugging */
+        [33]cgiReadEnvironment("/path/to/capcgi.dat");
+#endif
+        /* Important: we must indicate the type of document */
+        [34]cgiHeaderContentType("text/html");
+        /* Now invoke other functions to handle each part of the form */
+        fprintf([35]cgiOut, "<HTML><HEAD>\n");
+        fprintf([36]cgiOut, "<TITLE>cgic test</TITLE></HEAD>\n"):
+        fprintf([37]cgiOut, "<BODY><H1>cgic test</H1>\n");
+        Name();
+        Address();
+        Hungry();
+        Temperature();
+        Frogs();
+        Color();
+        Flavors();
+        NonExButtons();
+        RadioButtons();
+        fprintf([38]cgiOut, "</BODY></HTML>\n");
+        /* This value will be the exit code of the program; 0
+                generally indicates success among Unix and DOS programs */
+        return 0;
+}
+
+   Note the DEBUG #ifdef. If DEBUG is defined at compile time, either by
+   inserting the line "#define DEBUG 1" into the program or by setting it
+   in the Makefile or other development environment, then the
+   [39]cgiReadEnvironment() function will be called to restore a captured
+   CGI environment for debugging purposes. See the discussion of the
+   [40]capture program, which is provided for use in CGI debugging.
+   
+    Outputting the Header
+    
+   Next, one of the cgiHeader functions should be called. In this
+   program, [41]cgiHeaderContentType() is called to indicate the MIME
+   type of the document being output, in this case "text/html" (a normal
+   HTML document). A few other common MIME types are "image/gif",
+   "image/jpeg" and "audio/basic".
+   
+   Note that [42]cgiHeaderStatus() or [43]cgiHeaderLocation() could have
+   been invoked instead to output an error code or redirect the request
+   to a different URL. Only one of the cgiHeader functions should be
+   called in a single execution of the program.
+   
+   _Important:_ one of the cgiHeader functions, usually
+   [44]cgiHeaderContentType(), _must_ be invoked before outputting any
+   other response to the user. Otherwise, the result will not be a valid
+   document and the browser's behavior will be unpredictable. You may, of
+   course, output your own ContentType and other header information to
+   [45]cgiOut if you prefer. The cgiHeader functions are provided as a
+   convenience.
+   
+   Next, cgiMain() invokes various functions to handle individual parts
+   of the form. When the function is finished, it returns 0, the usual
+   return code for a successful program.
+   
+    Handling Text Input
+    
+   The Name() function of cgictest is shown below:
+void Name() {
+        char name[81];
+        [46]cgiFormStringNoNewlines("name", name, 81);
+        fprintf([47]cgiOut, "Name: %s<BR>\n", name);
+}
+
+   The purpose of this function is to retrieve and display the name that
+   was input by the user. Since the programmer has decided that names
+   should be permitted to have up to 80 characters, a buffer of 81
+   characters has been declared (allowing for the final null character).
+   The [48]cgiFormStringNoNewlines() function is then invoked to retrieve
+   the name and ensure that carriage returns are not present in the name
+   (despite the incorrect behavior of some web browsers). The first
+   argument is the name of the input field in the form, the second
+   argument is the buffer to which the data should be copies, and the
+   third argument is the size of the buffer. cgic will never write beyond
+   the size of the buffer, and will always provide a null-terminated
+   string in response; if the buffer is too small, the string will be
+   shortened. If this is not acceptable, the
+   [49]cgiFormStringSpaceNeeded() function can be used to check the
+   amount of space needed; the return value of cgiFormStringNoNewlines()
+   can also be checked to determine whether truncation occurred. See the
+   full description of [50]cgiFormStringNoNewlines().
+   
+    Handling Output
+    
+   Note that Name() writes its HTML output to [51]cgiOut, not to stdout.
+   
+   _Important:_ [52]cgiOut is normally equivalent to stdout, and there is
+   no performance penalty for using it. It is recommended that you write
+   output to [53]cgiOut to ensure compatibility with future versions of
+   the cgic library for special environments that do not provide stdin
+   and stdout for each cgi connection.
+   
+   Note that, for text input areas in which carriage returns _are_
+   desired, the function [54]cgiFormString should be used instead.
+   cgiFormString ensures that line breaks are always represented by a
+   single carriage return (ascii decimal 13), making life easier for the
+   programmer. See the source code to the Address() function of
+   cgictest.c for an example.
+   
+    Handling Single Checkboxes
+    
+   Consider the Hungry() function, which determines whether the user has
+   selected the "hungry" checkbox:
+
+void Hungry() {
+        if ([55]cgiFormCheckboxSingle("hungry") == [56]cgiFormSuccess) {
+                fprintf(cgiOut, "I'm Hungry!<BR>\n");
+        } else {
+                fprintf(cgiOut, "I'm Not Hungry!<BR>\n");
+        }
+}
+
+   This function takes advantage of the [57]cgiFormCheckboxSingle()
+   function, which determines whether a single checkbox has been
+   selected. cgiFormCheckboxSingle() accepts the name attribute of the
+   checkbox as its sole argument and returns [58]cgiFormSuccess if the
+   checkbox is selected, or [59]cgiFormNotFound if it is not. If multiple
+   checkboxes with the same name are in use, consider the
+   [60]cgiFormCheckboxMultiple() and [61]cgiFormStringMultiple()
+   functions.
+   
+    Handling Numeric Input
+    
+   Now consider the Temperature() function, which retrieves a temperature
+   in degrees (a floating-point value) and ensures that it lies within
+   particular bounds:
+
+void Temperature() {
+        double temperature;
+        [62]cgiFormDoubleBounded("temperature", &temperature, 80.0, 120.0, 98.6
+);
+        fprintf([63]cgiOut, "My temperature is %f.<BR>\n", temperature);
+}
+
+   The temperature is retrieved by the function
+   [64]cgiFormDoubleBounded(). The first argument is the name of the
+   temperature input field in the form; the second argument points to the
+   address of the variable that will contain the result. The next two
+   arguments are the lower and upper bounds, respectively. The final
+   argument is the default value to be returned if the user did not
+   submit a value.
+   
+   This function always retrieves a reasonable value within the specified
+   bounds; values above or below bounds are constrained to fit the
+   bounds. However, the return value of cgiFormDoubleBounded can be
+   checked to make sure the actual user entry was in bounds, not blank,
+   and so forth; see the description of [65]cgiFormDoubleBounded() for
+   more details. If bounds checking is not desired, consider using
+   [66]cgiFormDouble() instead.
+   
+   Note that, for integer input, the functions [67]cgiFormInteger and
+   [68]cgiFormIntegerBounded are available. The behavior of these
+   functions is similar to that of their floating-point counterparts
+   above.
+   
+    Handling Single-Choice Input
+    
+   The <SELECT> tag of HTML is used to provide the user with several
+   choices. Radio buttons and checkboxes can also be used when the number
+   of choices is relatively small. Consider the Color() function of
+   cgictest.c:
+
+char *colors[] = {
+        "Red",
+        "Green",
+        "Blue"
+};
+
+void Color() {
+        int colorChoice;
+        [69]cgiFormSelectSingle("colors", colors, 3, &colorChoice, 0);
+        fprintf([70]cgiOut, "I am: %s<BR>\n", colors[colorChoice]);
+}
+
+   This function determines which of several colors the user chose from a
+   <SELECT> list in the form. An array of colors is declared; the
+   [71]cgiFormSelectSingle() function is then invoked to determine which,
+   if any, of those choices was selected. The first argument indicates
+   the name of the input field in the form. The second argument points to
+   the list of acceptable colors. The third argument indicates the number
+   of entries in the color array. The fourth argument points to the
+   variable which will accept the chosen color, and the last argument
+   indicates the index of the default value to be set if no selection was
+   submitted by the browser.
+   
+   [72]cgiFormSelectSingle() will always indicate a reasonable selection
+   value. However, if the programmer wishes to know for certain that a
+   value was actually submitted, that the value submitted was a legal
+   response, and so on, the return value of cgiFormSelectSingle() can be
+   consulted. See the full description of [73]cgiFormSelectSingle() for
+   more information.
+   
+   Note that radio button groups and <SELECT> lists can both be handled
+   by this function. If you are processing radio button groups, you may
+   prefer to invoke [74]cgiFormRadio(), which functions identically.
+   
+   _"What if I won't know the acceptable choices at runtime?"_
+   
+   If the acceptable choices aren't known _until_ runtime, one can simply
+   load the choices from disk. But if the acceptable choices aren't fixed
+   at all (consider a list of country names; new names may be added to
+   the form at any time and it is inconvenient to also update program
+   code or a separate list of countries), simply invoke
+   [75]cgiFormStringNoNewlines() instead to retrieve the string directly.
+   Keep in mind that, if you do so, validating the response to make sure
+   it is safe and legitimate becomes a problem for your own program to
+   solve. The advantage of cgiFormSelectSingle() is that invalid
+   responses are never returned.
+   
+   To handle multiple-selection <SELECT> lists and groups of checkboxes
+   with the same name, see the discussion of the NonExButtons() function
+   of cgictest.c, immediately below.
+   
+    Handling Multiple-Choice Input
+    
+   Consider the first half of the NonExButtons() function of cgictest.c:
+char *votes[] = {
+        "A",
+        "B",
+        "C",
+        "D"
+};
+
+void NonExButtons() {
+        int voteChoices[4];
+        int i;
+        int result;
+        int invalid;
+
+        char **responses;
+
+        /* Method #1: check for valid votes. This is a good idea,
+                since votes for nonexistent candidates should probably
+                be discounted... */
+        fprintf([76]cgiOut, "Votes (method 1):<BR>\n");
+        result = [77]cgiFormCheckboxMultiple("vote", votes, 4,
+                voteChoices, &invalid);
+        if (result == [78]cgiFormNotFound) {
+                fprintf([79]cgiOut, "I hate them all!<p>\n");
+        } else {
+                fprintf([80]cgiOut, "My preferred candidates are:\n");
+                fprintf([81]cgiOut, "<ul>\n");
+                for (i=0; (i < 4); i++) {
+                        if (voteChoices[i]) {
+                                fprintf([82]cgiOut, "<li>%s\n", votes[i]);
+                        }
+                }
+                fprintf([83]cgiOut, "</ul>\n");
+        }
+
+   This function takes advantage of [84]cgiFormCheckboxMultiple(), which
+   is used to identify one or more selected checkboxes with the same
+   name. This function performs identically to
+   [85]cgiFormSelectMultiple(). That is, <SELECT> tags with the MULTIPLE
+   attribute are handled just like a group of several checkboxes with the
+   same name.
+   
+   The first argument to [86]cgiFormCheckboxMultiple() is the name given
+   to all checkbox input fields in the group. The second argument points
+   to an array of legitimate values; these should correspond to the VALUE
+   attributes of the checkboxes (or OPTION tags in a <SELECT> list). The
+   third argument indicates the number of entries in the array of
+   legitimate values. The fourth argument points to an array of integers
+   with the same number of entries as the array of legitimate values;
+   each entry will be set true if that checkbox or option was selected,
+   false otherwise.
+   
+   The last argument points to an integer which will be set to the number
+   of invalid responses (responses not in the array of valid responses)
+   that were submitted. If this value is not of interest, the last
+   argument may be a null pointer (0).
+   
+   Note that the return value of cgiFormCheckboxMultiple is inspected to
+   determine whether any choices at all were set. See the full
+   description of [87]cgiFormCheckboxMultiple for other possible return
+   values.
+   
+   _"What if I won't know the acceptable choices at runtime?"_
+   
+   If the acceptable choices aren't known _until_ runtime, one can simply
+   load the choices from disk. But if the acceptable choices aren't fixed
+   at all (consider a list of ice cream flavors; new names may be added
+   to the form at any time and it is inconvenient to also update program
+   code or a separate list of countries), a more dynamic approach is
+   needed. Consider the second half of the NonExButtons() function of
+   cgictest.c:
+
+        /* Method #2: get all the names voted for and trust them.
+                This is good if the form will change more often
+                than the code and invented responses are not a danger
+                or can be checked in some other way. */
+        fprintf([88]cgiOut, "Votes (method 2):<BR>\n");
+        result = [89]cgiFormStringMultiple("vote", &responses);
+        if (result == [90]cgiFormNotFound) {
+                fprintf([91]cgiOut, "I hate them all!<p>\n");
+        } else {
+                int i = 0;
+                fprintf([92]cgiOut, "My preferred candidates are:\n");
+                fprintf([93]cgiOut, "<ul>\n");
+                while (responses[i]) {
+                        fprintf([94]cgiOut, "<li>%s\n", responses[i]);
+                        i++;
+                }
+                fprintf([95]cgiOut, "</ul>\n");
+        }
+        /* We must be sure to free the string array or a memory
+                leak will occur. Simply calling free() would free
+                the array but not the individual strings. The
+                function cgiStringArrayFree() does the job completely. */
+
+        [96]cgiStringArrayFree(responses);
+}
+
+   This code excerpt demonstrates an alternate means of retrieving a list
+   of choices. The function [97]cgiFormStringMultiple() is used to
+   retrieve an array consisting of all the strings submitted for with a
+   particular input field name. This works both for <SELECT> tags with
+   the MULTIPLE attribute and for groups of checkboxes with the same
+   name.
+   
+   The first argument to [98]cgiFormStringMultiple() is the name of the
+   input field or group of input fields in question. The second argument
+   should be the address of a pointer to a pointer to a string, which
+   isn't as bad as it sounds. Consider the following simple call of the
+   function:
+
+/* An array of strings; each C string is an array of characters */
+char **responses;
+
+[99]cgiFormStringMultiple("vote", &responses);
+
+   _"How do I know how many responses there are?"_
+   
+   After the call, the last entry in the string array will be a null
+   pointer. Thus the simple loop:
+
+int i = 0;
+while (responses[i]) {
+        /* Do something with the string responses[i] */
+        i++;
+}
+
+   can be used to walk through the array until the last entry is
+   encountered.
+   
+   _Important:_ unlike other functions in the cgic library, the
+   [100]cgiFormStringMultiple function returns a pointer to _allocated
+   memory_. Your code should not modify the strings in the responses
+   array or the responses array itself; if modification is needed, the
+   strings should be copied. When your code is done examining the
+   responses array, you _MUST_ call [101]cgiStringArrayFree() with the
+   array as an argument to free the memory associated with the array.
+   Otherwise, the memory may be lost permanently (under some operating
+   systems), or will not be available again until the program exists.
+   _Don't_ just call the free() function; if you do, the individual
+   strings will not be freed.
+   
+    Examining CGI environment variables
+    
+   The CGI standard specifies a number of environment variables which are
+   set by the server. However, servers are somewhat unpredictable as to
+   whether these variables will be null or point to empty strings when an
+   environment variable is not set. Also, in order to allow the
+   programmer to restore saved CGI environments, the cgic library needs
+   have a way of insulating the programmer from the actual environment
+   variables.
+   
+   Instead of calling getenv() to determine the value of a variable such
+   as HTTP_USER_AGENT (the browser software being used), always use the
+   [102]cgic copies of the environment variables, which are always valid
+   C strings (they are never null, although they may point to an empty
+   string). For instance, the cgic variable containing the name of the
+   browser software is [103]cgiUserAgent. The referring URL appears in
+   the variable [104]cgiReferrer.
+   
+  How can I generate images from my cgic application?
+  
+   cgic can be used in conjunction with the [105]gd graphics library,
+   which can produce GIF images on the fly.
+   
+   The following short sample program hints at the possibilities:
+#include "cgic.h"
+#include "gd.h"
+
+char *colors[] = {
+        "red", "green", "blue"
+};
+
+#define colorsTotal 3
+
+int cgiMain() {
+        int colorChosen;
+        gdImagePtr im;
+        int r, g, b;
+        /* Use gd to create an image */
+        im = gdImageCreate(64, 64);
+        r = gdImageColorAllocate(im, 255, 0, 0);
+        g = gdImageColorAllocate(im, 0, 255, 0);
+        b = gdImageColorAllocate(im, 0, 0, 255);
+        /* Now use cgic to find out what color the user requested */
+        [106]cgiFormSelectSingle("color", 3, &colorChosen, 0);
+        /* Now fill with the desired color */
+        switch(colorChosen) {
+                case 0:
+                gdImageFill(im, 32, 32, r);
+                break;
+                case 1:
+                gdImageFill(im, 32, 32, g);
+                break;
+                case 2:
+                gdImageFill(im, 32, 32, b);
+                break;
+        }
+        /* Now output the image. Note the content type! */
+        cgiHeaderContentType("image/gif");
+        /* Send the image to cgiOut */
+        gdImageGif(im, cgiOut);
+        /* Free the gd image */
+        gdImageDestroy(im);
+        return 0;
+}
+
+   Note that this program would need to be linked with both cgic.o and
+   libgd.a. Often programs of this type respond to one cgiPathInfo value
+   by returning an HTML page with an inline image reference that, in
+   turn, generates a GIF image.
+   
+  Debugging CGI applications: using capture
+  
+   Debugging CGI applications can be a painful task. Since CGI
+   applications run in a special environment created by the web server,
+   it is difficult to execute them in a debugger. However, the cgic
+   library provides a way of capturing "live" CGI environments to a file,
+   and also provides a way to reload saved environments.
+   
+   The provided program 'capture.c' can be used to capture CGI
+   environments. Just change the first line of the cgiMain() function of
+   capture.c to save the CGI environment to a filename appropriate on
+   your system and type 'make capture'. Then place capture in your cgi
+   directory and set the form action or other link you want to test to
+   point to it. When the form submission or other link takes place,
+   capture will write the CGI environment active at that time to the
+   filename you specified in the source. The [107]cgiReadEnvironment()
+   function can then be invoked on the same filename at the beginning of
+   the cgiMain() function of the application you want to test in order to
+   restore the captured environment. You can then execute your program in
+   the debugger of your choice, and it should perform exactly as it would
+   have performed had it been launched by the actual web server.
+   
+   _Important:_ Make sure you specify the full path, as the the current
+   working directory of a CGI script may not be what you think it is.
+   
+   _Even More Important:_ If you call getenv() yourself in your code,
+   instead of using the provided [108]cgic copies of the CGI environment
+   variables, you will _not_ get the values you expect when running with
+   a saved CGI environment. Always use the cgic variables instead of
+   calling getenv().
+   
+  cgic function reference
+  
+   cgiFormResultType cgiFormString( char *name, char *result, int max)
+          cgiFormString attempts to retrieve the string sent for the
+          specified input field. The text will be copied into the buffer
+          specified by result, up to but not exceeding max-1 bytes; a
+          terminating null is then added to complete the string.
+          Regardless of the newline format submitted by the browser,
+          cgiFormString always encodes each newline as a single line feed
+          (ascii decimal 10); as a result the final string may be
+          slightly shorter than indicated by a call to
+          [109]cgiFormStringSpaceNeeded but will never be longer.
+          cgiFormString returns [110]cgiFormSuccess if the string was
+          successfully retrieved, [111]cgiFormTruncated if the string was
+          retrieved but was truncated to fit the buffer, cgiFormEmpty if
+          the string was retrieved but was empty, cgiFormLong if the
+          string was retrieved but was truncated to fit into the buffer,
+          and [112]cgiFormNotFound if no such input field was submitted.
+          In the last case, an empty string is copied to result.
+          
+   cgiFormResultType cgiFormStringNoNewlines( char *name, char *result,
+          int max)
+          cgiFormStringNoNewlines() is exactly equivalent to
+          [113]cgiFormString(), except that any carriage returns or line
+          feeds that occur in the input will be stripped out. The use of
+          this function is recommended for single-line text input fields,
+          as some browsers will submit carriage returns and line feeds
+          when they should not.
+          
+   cgiFormResultType cgiFormStringSpaceNeeded( char *name, int *length)
+          cgiFormStringSpaceNeeded() is used to determine the length of
+          the input text buffer needed to receive the contents of the
+          specified input field. This is useful if the programmer wishes
+          to allocate sufficient memory for input of arbitrary length.
+          The actual length of the string retrieved by a subsequent call
+          to cgiFormString() may be slightly shorter but will never be
+          longer than *result. On success, cgiFormStringSpaceNeeded()
+          sets the value pointed to by length to the number of bytes of
+          data, including the terminating null, and returns
+          [114]cgiFormSuccess. If no value was submitted for the
+          specified field, cgiFormStringSpaceNeeded sets the value
+          pointed to by length to 1 and returns [115]cgiFormNotFound. 1
+          is set to ensure space for an empty string (a single null
+          character) if cgiFormString is called despite the return value.
+          
+   cgiFormResultType cgiFormStringMultiple( char *name, char
+          ***ptrToStringArray)
+          cgiFormStringMultiple is useful in the unusual case in which
+          several input elements in the form have the same name and, for
+          whatever reason, the programmer does not wish to use the
+          checkbox, radio button and selection menu functions provided
+          below. This is occasionally needed if the programmer cannot
+          know in advance what values might appear in a
+          multiple-selection list or group of checkboxes on a form. The
+          value pointed to by result will be set to a pointer to an array
+          of strings; the last entry in the array will be a null pointer.
+          This array is allocated by the CGI library. Important: when
+          done working with the array, you must call cgiStringArrayFree()
+          with the array pointer as the argument. cgiFormStringMultiple()
+          returns [116]cgiFormSuccess if at least one occurrence of the
+          name is found, [117]cgiFormNotFound if no occurrences are
+          found, or cgiFormMemory if not enough memory is available to
+          allocate the array to be returned. In all cases except the
+          last, ptrToStringArray is set to point to a valid array of
+          strings, with the last element in the array being a null
+          pointer; in the out-of-memory case ptrToStringArray is set to a
+          null pointer.
+          
+   void cgiStringArrayFree(char **stringArray)
+          cgiStringArrayFree() is used to free the memory associated with
+          a string array created by cgiFormStringMultiple().
+          
+   cgiFormResultType cgiFormInteger( char *name, int *result, int
+          defaultV)
+          cgiFormInteger() attempts to retrieve the integer sent for the
+          specified input field. The value pointed to by result will be
+          set to the value submitted. cgiFormInteger() returns
+          cgiFormSuccess if the value was successfully retrieved,
+          cgiFormEmpty if the value submitted is an empty string,
+          cgiFormBadType if the value submitted is not an integer, and
+          [118]cgiFormNotFound if no such input field was submitted. In
+          the last three cases, the value pointed to by result is set to
+          the specified default.
+          
+   cgiFormResultType cgiFormIntegerBounded( char *name, int *result, int
+          min, int max, int defaultV)
+          cgiFormIntegerBounded() attempts to retrieve the integer sent
+          for the specified input field, and constrains the result to be
+          within the specified bounds. The value pointed to by result
+          will be set to the value submitted. cgiFormIntegerBounded()
+          returns cgiFormSuccess if the value was successfully retrieved,
+          [119]cgiFormConstrained if the value was out of bounds and
+          result was adjusted accordingly, [120]cgiFormEmpty if the value
+          submitted is an empty string, [121]cgiFormBadType if the value
+          submitted is not an integer, and [122]cgiFormNotFound if no
+          such input field was submitted. In the last three cases, the
+          value pointed to by result is set to the specified default.
+          
+   cgiFormResultType cgiFormDouble( char *name, double *result, double
+          defaultV)
+          cgiFormDouble attempts to retrieve the floating-point value
+          sent for the specified input field. The value pointed to by
+          result will be set to the value submitted. cgiFormDouble
+          returns cgiFormSuccess if the value was successfully retrieved,
+          cgiFormEmpty if the value submitted is an empty string,
+          cgiFormBadType if the value submitted is not a number, and
+          [123]cgiFormNotFound if no such input field was submitted. In
+          the last three cases, the value pointed to by result is set to
+          the specified default.
+          
+   cgiFormResultType cgiFormDoubleBounded( char *name, double *result,
+          double min, double max, double defaultV)
+          cgiFormDoubleBounded() attempts to retrieve the floating-point
+          value sent for the specified input field, and constrains the
+          result to be within the specified bounds. The value pointed to
+          by result will be set to the value submitted.
+          cgiFormDoubleBounded() returns cgiFormSuccess if the value was
+          successfully retrieved, [124]cgiFormConstrained if the value
+          was out of bounds and result was adjusted accordingly,
+          [125]cgiFormEmpty if the value submitted is an empty string,
+          [126]cgiFormBadType if the value submitted is not a number, and
+          [127]cgiFormNotFound if no such input field was submitted. In
+          the last three cases, the value pointed to by result is set to
+          the specified default.
+          
+   cgiFormResultType cgiFormSelectSingle( char *name, char **choicesText,
+          int choicesTotal, int *result, int defaultV)
+          cgiFormSelectSingle() retrieves the selection number associated
+          with a <SELECT> element that does not allow multiple
+          selections. name should identify the NAME attribute of the
+          <SELECT> element. choicesText should point to an array of
+          strings identifying each choice; choicesTotal should indicate
+          the total number of choices. The value pointed to by result
+          will be set to the position of the actual choice selected
+          within the choicesText array, if any, or to the value of
+          default, if no selection was submitted or an invalid selection
+          was made. cgiFormSelectSingle() returns [128]cgiFormSuccess if
+          the value was successfully retrieved, [129]cgiFormNotFound if
+          no selection was submitted, and [130]cgiFormNoSuchChoice if the
+          selection does not match any of the possibilities in the
+          choicesText array.
+          
+   cgiFormResultType cgiFormSelectMultiple( char *name, char
+          **choicesText, int choicesTotal, int *result, int *invalid)
+          cgiFormSelectMultiple() retrieves the selection numbers
+          associated with a <SELECT> element that does allow multiple
+          selections. name should identify the NAME attribute of the
+          <SELECT> element. choicesText should point to an array of
+          strings identifying each choice; choicesTotal should indicate
+          the total number of choices. result should point to an array of
+          integers with as many elements as there are strings in the
+          choicesText array. For each choice in the choicesText array
+          that is selected, the corresponding integer in the result array
+          will be set to one; other entries in the result array will be
+          set to zero. cgiFormSelectMultiple() returns
+          [131]cgiFormSuccess if at least one valid selection was
+          successfully retrieved or cgiFormNotFound if no valid
+          selections were submitted. The integer pointed to by invalid is
+          set to the number of invalid selections that were submitted,
+          which should be zero unless the form and the choicesText array
+          do not agree.
+          
+   cgiFormResultType cgiFormCheckboxSingle( char *name)
+          cgiFormCheckboxSingle determines whether the checkbox with the
+          specified name is checked. cgiFormCheckboxSingle returns
+          [132]cgiFormSuccess if the button is checked,
+          [133]cgiFormNotFound if the checkbox is not checked.
+          cgiFormCheckboxSingle is intended for single checkboxes with a
+          unique name; see below for functions to deal with multiple
+          checkboxes with the same name, and with radio buttons.
+          
+   cgiFormResultType cgiFormCheckboxMultiple( char *name, char
+          **valuesText, int valuesTotal, int *result, int *invalid)
+          cgiFormCheckboxMultiple() determines which checkboxes among a
+          group of checkboxes with the same name are checked. This is
+          distinct from radio buttons (see [134]cgiFormRadio). valuesText
+          should point to an array of strings identifying the VALUE
+          attribute of each checkbox; valuesTotal should indicate the
+          total number of checkboxes. result should point to an array of
+          integers with as many elements as there are strings in the
+          valuesText array. For each choice in the valuesText array that
+          is selected, the corresponding integer in the result array will
+          be set to one; other entries in the result array will be set to
+          zero. cgiFormCheckboxMultiple returns cgiFormSuccess if at
+          least one valid checkbox was checked or cgiFormNotFound if no
+          valid checkboxes were checked. The integer pointed to by
+          invalid is set to the number of invalid selections that were
+          submitted, which should be zero unless the form and the
+          valuesText array do not agree.
+          
+   cgiFormResultType cgiFormRadio( char *name, char **valuesText, int
+          valuesTotal, int *result, int defaultV)
+          cgiFormRadio() determines which, if any, of a group of radio
+          boxes with the same name was selected. valuesText should point
+          to an array of strings identifying the VALUE attribute of each
+          radio box; valuesTotal should indicate the total number of
+          radio boxes. The value pointed to by result will be set to the
+          position of the actual choice selected within the valuesText
+          array, if any, or to the value of default, if no radio box was
+          checked or an invalid selection was made. cgiFormRadio()
+          returns [135]cgiFormSuccess if a checked radio box was found in
+          the group, [136]cgiFormNotFound if no box was checked, and
+          [137]cgiFormNoSuchChoice if the radio box submitted does not
+          match any of the possibilities in the valuesText array. /*
+          Header output functions. Call the first to specify a new URL if
+          the document request should be redirected. Call the second if
+          you wish to respond to a request with an HTTP error status code
+          and message; see the HTTP documentation for the legal codes.
+          Call the third in the normal case, in order to specify the mime
+          type of the document (such as "text/html"); you may then output
+          the actual document directly to cgiOut. */
+          
+   void cgiHeaderLocation(char *redirectUrl)
+          cgiHeaderLocation() should be called if the programmer wishes
+          to redirect the user to a different URL. No futher output is
+          needed in this case. Only one of the cgiHeader functions
+          ([138]cgiHeaderLocation, [139]cgiHeaderStatus and
+          [140]cgiHeaderContentType) should be invoked for each CGI
+          transaction.
+          
+   void cgiHeaderStatus(int status, char *statusMessage)
+          cgiHeaderStatus() should be called if the programmer wishes to
+          output an HTTP error status code instead of a document. The
+          status code is the first argument; the second argument is the
+          status message to be displayed to the user. Only one of the
+          cgiHeader functions ([141]cgiHeaderLocation,
+          [142]cgiHeaderStatus and [143]cgiHeaderContentType) should be
+          invoked for each CGI transaction.
+          
+   void cgiHeaderContentType(char *mimeType)
+          cgiHeaderContentType() should be called if the programmer
+          wishes to output a new document in response to the user's
+          request. This is the normal case. The single argument is the
+          MIME document type of the response; typical values are
+          "text/html" for HTML documents, "text/plain" for plain ASCII
+          without HTML tags, "image/gif" for a GIF image and
+          "audio/basic" for .au-format audio. Only one of the cgiHeader
+          functions ([144]cgiHeaderLocation, [145]cgiHeaderStatus and
+          [146]cgiHeaderContentType) should be invoked for each CGI
+          transaction.
+          
+   cgiEnvironmentResultType cgiWriteEnvironment(char *filename)
+          cgiWriteEnvironment() can be used to write the entire CGI
+          environment, including form data, to the specified output file;
+          [147]cgiReadEnvironment() can then be used to restore that
+          environment from the specified input file for debugging. Of
+          course, these will only work as expected if you use the
+          [148]cgic copies of the CGI environment variables and
+          [149]cgiIn and [150]cgiOut rather than stdin and stdout (also
+          see above). These functions are useful in order to capture real
+          CGI situations while the web server is running, then recreate
+          them in a debugging environment. Both functions return
+          [151]cgiEnvironmentSuccess on success, [152]cgiEnvironmentIO on
+          an I/O error, and [153]cgiEnvironmentMemory on an out-of-memory
+          error.
+          
+   cgiEnvironmentResultType cgiReadEnvironment(char *filename)
+          cgiReadEnvironment() restores a CGI environment saved to the
+          specified file by [154]cgiWriteEnvironment(). Of course, these
+          will only work as expected if you use the [155]cgic copies of
+          the CGI environment variables and [156]cgiIn and [157]cgiOut
+          rather than stdin and stdout (also see above). These functions
+          are useful in order to capture real CGI situations while the
+          web server is running, then recreate them in a debugging
+          environment. Both functions return [158]cgiEnvironmentSuccess
+          on success, [159]cgiEnvironmentIO on an I/O error, and
+          [160]cgiEnvironmentMemory on an out-of-memory error.
+          
+   int cgiMain()
+          _The programmer must write this function_, which performs the
+          unique task of the program and is invoked by the true main()
+          function, found in the cgic library itself. The return value
+          from cgiMain will be the return value of the program. It is
+          expected that the user will make numerous calls to the cgiForm
+          functions from within this function. See [161]how to write a
+          cgic application for details.
+          
+  cgic variable reference
+  
+   This section provides a reference guide to the various global
+   variables provided by cgic for the programmer to utilize. These
+   variables should always be used in preference to stdin, stdout, and
+   calls to getenv() in order to ensure compatibility with the [162]cgic
+   CGI debugging features.
+   
+   Most of these variables are equivalent to various CGI environment
+   variables. The most important difference is that the cgic environment
+   string variables are never null pointers. They will always point to
+   valid C strings of zero or more characters.
+   
+   char *cgiServerSoftware
+          Points to the name of the server software, or to an empty
+          string if unknown.
+          
+   char *cgiServerName
+          Points to the name of the server, or to an empty string if
+          unknown.
+          
+   char *cgiGatewayInterface
+          Points to the name of the gateway interface (usually CGI/1.1),
+          or to an empty string if unknown.
+          
+   char *cgiServerProtocol
+          Points to the protocol in use (usually HTTP/1.0), or to an
+          empty string if unknown.
+          
+   char *cgiServerPort
+          Points to the port number on which the server is listening for
+          HTTP connections (usually 80), or an empty string if unknown.
+          
+   char *cgiRequestMethod
+          Points to the method used in the request (usually GET or POST),
+          or an empty string if unknown (this should not happen).
+          
+   char *cgiPathInfo
+          Most web servers recognize any additional path information in
+          the URL of the request beyond the name of the CGI program
+          itself and pass that information on to the program. cgiPathInfo
+          points to this additional path information.
+          
+   char *cgiPathTranslated
+          Most web servers recognize any additional path information in
+          the URL of the request beyond the name of the CGI program
+          itself and pass that information on to the program.
+          cgiPathTranslated points to this additional path information,
+          translated by the server into a filesystem path on the local
+          server.
+          
+   char *cgiScriptName
+          Points to the name under which the program was invoked.
+          
+   char *cgiQueryString
+          Contains any query information submitted by the user as a
+          result of a GET-method form or an <ISINDEX> tag. Note that this
+          information need not be parsed directly unless an <ISINDEX> tag
+          was used; normally it is parsed automatically by the cgic
+          library. Use the cgiForm family of functions to retrieve the
+          values associated with form input fields. See [163]how to write
+          a cgic application for more information.
+          
+   char *cgiRemoteHost
+          Points to the fully resolved hostname of the browser, if known,
+          or an empty string if unknown.
+          
+   char *cgiRemoteAddr
+          Points to the dotted-decimal IP address of the browser, if
+          known, or an empty string if unknown.
+          
+   char *cgiAuthType
+          Points to the type of authorization used for the request, if
+          any, or an empty string if none or unknown.
+          
+   char *cgiRemoteUser
+          Points to the user name under which the user has authenticated;
+          an empty string if no authentication has taken place. The
+          certainty of this information depends on the type of
+          authorization in use; see [164]cgiAuthType.
+          
+   char *cgiRemoteIdent
+          Points to the user name volunteered by the user via the user
+          identification protocol; an empty string if unknown. This
+          information is not secure. Identification demons can be
+          installed by users on insecure systems such as Windows
+          machines.
+          
+   char *cgiContentType
+          Points to the MIME content type of the information submitted by
+          the user, if any; an empty string if no information was
+          submitted. If this string is equal to
+          application/x-www-form-urlencoded, the cgic library will
+          automatically examine the form data submitted. If this string
+          has any other non-empty value, a different type of data has
+          been submitted. This is currently very rare, as most browsers
+          can only submit forms, but if it is of interest to your
+          application, the submitted data can be read from the [165]cgiIn
+          file pointer.
+          
+   char *cgiAccept
+          Points to a space-separated list of MIME content types
+          acceptable to the browser (see [166]cgiHeaderContentType() ),
+          or an empty string. Unfortunately, this variable is not
+          supplied in a useful form by most current browsers. Programmers
+          wishing to make decisions based on the capabilities of the
+          browser are advised to check the [167]cgiUserAgent variable
+          against a list of browsers and capabilities instead.
+          
+   char *cgiUserAgent
+          Points to the name of the browser in use, or an empty string if
+          this information is not available.
+          
+   char *cgiReferrer
+          Points to the URL of the previous page visited by the user.
+          This is often the URL of the form that brought the user to your
+          program. Note that reporting this information is entirely up to
+          the browser, which may choose not do so, and may choose not to
+          do so truthfully. However, this variable is typically accurate.
+          _The frequently used misspelling cgiReferer is also supplied as
+          a macro._
+          
+   int cgiContentLength
+          The number of bytes of form or query data received. Note that
+          if the submission is a form or query submission the library
+          will read and parse all the information directly from cgiIn
+          and/or cgiQueryString. The programmer should not do so, and
+          indeed the cgiIn pointer will be at end-of-file in such cases.
+          
+   FILE *cgiOut
+          Pointer to CGI output. The cgiHeader functions, such as
+          [168]cgiHeaderContentType, should be used first to output the
+          mime headers; the output HTML page, GIF image or other web
+          document should then be written to cgiOut by the programmer
+          using standard C I/O functions such as fprintf() and fwrite().
+          cgiOut is normally equivalent to stdout; however, it is
+          recommended that cgiOut be used to ensure compatibility with
+          future versions of cgic for specialized environments.
+          
+   FILE *cgiIn
+          Pointer to CGI input. In 99% of cases, you will not need this.
+          However, in future applications, documents other than form data
+          are posted to the server, in which case this file pointer may
+          be read from in order to retrieve the contents.
+          
+  cgic result code reference
+  
+   In most cases, cgic functions are designed to produce reasonable
+   results even when browsers and users do unreasonable things. However,
+   it is sometimes important to know precisely which unreasonable things
+   took place, especially when assigning a default value or bounding a
+   value is an inadequate solution. The following result codes are useful
+   in making this determination.
+   
+   cgiFormSuccess
+          Indicates that the function successfully performed at least one
+          action (or retrieved at least one value, where applicable).
+          
+   cgiFormTruncated
+          Indicates that a string value retrieved from the user was cut
+          short to avoid overwriting the end of a buffer.
+          
+   cgiFormBadType
+          Indicates that a "numeric" value submitted by the user was in
+          fact not a legal number.
+          
+   cgiFormEmpty
+          Indicates that a field was retrieved but contained no data.
+          
+   cgiFormNotFound
+          Indicates that no value was submitted for a particular field.
+          
+   cgiFormConstrained
+          Indicates that a numeric value was beyond the specified bounds
+          and was forced to the lower or upper bound as appropriate.
+          
+   cgiFormNoSuchChoice
+          Indicates that the value submitted for a single-choice field
+          (such as a radio-button group) was not one of the acceptable
+          values. This usually indicates a discrepancy between the form
+          and the program.
+          
+   cgiEnvironmentIO
+          Indicates that an attempt to read or write the CGI environment
+          to or from a capture file failed due to an I/O error.
+          
+   cgiEnvironmentMemory
+          Indicates that an attempt to read or write the CGI environment
+          to or from a capture file failed due to an out-of-memory error.
+          
+   cgiEnvironmentSuccess
+          Indicates that an attempt to read or write the CGI environment
+          to or from a capture file was successful.
+          
+  cgic quick index
+  
+   [169]cgiAccept | [170]cgiAuthType | [171]cgiContentLength |
+   [172]cgiContentType | [173]cgiEnvironmentIO |
+   [174]cgiEnvironmentMemory | [175]cgiEnvironmentSuccess |
+   [176]cgiFormBadType | [177]cgiFormCheckboxMultiple() |
+   [178]cgiFormCheckboxSingle() | [179]cgiFormConstrained |
+   [180]cgiFormDouble() | [181]cgiFormDoubleBounded() | [182]cgiFormEmpty
+   | [183]cgiFormInteger() | [184]cgiFormIntegerBounded() |
+   [185]cgiFormNoSuchChoice | [186]cgiFormNotFound | [187]cgiFormRadio()
+   | [188]cgiFormSelectMultiple() | [189]cgiFormSelectSingle() |
+   [190]cgiFormString() | [191]cgiFormStringMultiple() |
+   [192]cgiFormStringNoNewlines() | [193]cgiFormStringSpaceNeeded() |
+   [194]cgiFormSuccess | [195]cgiFormTruncated | [196]cgiGatewayInterface
+   | [197]cgiHeaderContentType() | [198]cgiHeaderLocation() |
+   [199]cgiHeaderStatus() | [200]cgiIn | [201]cgiMain() [202]cgiOut |
+   [203]cgiPathInfo | [204]cgiPathTranslated | [205]cgiQueryString |
+   [206]cgiReadEnvironment() | [207]cgiReferrer() | [208]cgiRemoteAddr |
+   [209]cgiRemoteHost | [210]cgiRemoteIdent | [211]cgiRemoteUser |
+   [212]cgiRequestMethod | [213]cgiScriptName | [214]cgiServerName |
+   [215]cgiServerPort | [216]cgiServerProtocol | [217]cgiServerSoftware |
+   [218]cgiStringArrayFree() | [219]cgiUserAgent |
+   [220]cgiWriteEnvironment()
+   
+     _________________________________________________________________
+                                      
+   _[221]Boutell.Com, Inc._
+
+References
+
+   1. http://www.boutell.com/boutell/
+   2. http://www.boutell.com/cgic/
+   3. file://localhost/mnt/hdb/boutell/cgic/cgic.html#credits
+   4. file://localhost/mnt/hdb/boutell/cgic/cgic.html#support
+   5. file://localhost/mnt/hdb/boutell/cgic/cgic.html#whatsnew107
+   6. file://localhost/mnt/hdb/boutell/cgic/cgic.html#whatsnew106
+   7. file://localhost/mnt/hdb/boutell/cgic/cgic.html#whatis
+   8. file://localhost/mnt/hdb/boutell/cgic/cgic.html#obtain
+   9. file://localhost/mnt/hdb/boutell/cgic/cgic.html#build
+  10. file://localhost/mnt/hdb/boutell/cgic/cgic.html#nocompile
+  11. file://localhost/mnt/hdb/boutell/cgic/cgic.html#howto
+  12. file://localhost/mnt/hdb/boutell/cgic/cgic.html#images
+  13. file://localhost/mnt/hdb/boutell/cgic/cgic.html#debug
+  14. file://localhost/mnt/hdb/boutell/cgic/cgic.html#functions
+  15. file://localhost/mnt/hdb/boutell/cgic/cgic.html#variables
+  16. file://localhost/mnt/hdb/boutell/cgic/cgic.html#resultcodes
+  17. file://localhost/mnt/hdb/boutell/cgic/cgic.html#index
+  18. file://localhost/mnt/hdb/boutell/cgic/license.txt
+  19. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+  20. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormInteger
+  21. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormIntegerBounded
+  22. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDouble
+  23. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+  24. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormString
+  25. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormString
+  26. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+  27. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteUser
+  28. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteIdent
+  29. http://hoohoo.ncsa.uiuc.edu/cgi/
+  30. http://www.boutell.com/cgic/cgic107.tar.gz
+  31. http://www.boutell.com/cgic/cgic107.zip
+  32. file://localhost/mnt/hdb/boutell/cgic/cgic.html#support
+  33. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReadEnvironment
+  34. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+  35. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  36. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  37. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  38. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  39. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReadEnvironment
+  40. file://localhost/mnt/hdb/boutell/cgic/cgic.html#debug
+  41. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+  42. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderStatus
+  43. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderLocation
+  44. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+  45. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  46. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+  47. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  48. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+  49. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringSpaceNeeded
+  50. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+  51. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  52. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  53. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  54. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormString
+  55. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxSingle
+  56. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+  57. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxSingle
+  58. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+  59. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+  60. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+  61. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+  62. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+  63. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  64. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+  65. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+  66. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDouble
+  67. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormInteger
+  68. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormIntegerBounded
+  69. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+  70. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  71. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+  72. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+  73. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+  74. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormRadio
+  75. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+  76. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  77. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+  78. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+  79. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  80. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  81. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  82. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  83. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  84. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+  85. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectMultiple
+  86. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+  87. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+  88. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  89. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+  90. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+  91. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  92. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  93. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  94. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  95. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+  96. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiStringArrayFree
+  97. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+  98. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+  99. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+ 100. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+ 101. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiStringArrayFree
+ 102. file://localhost/mnt/hdb/boutell/cgic/cgic.html#variables
+ 103. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiUserAgent
+ 104. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReferrer
+ 105. http://siva.cshl.org/gd/gd.html
+ 106. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+ 107. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReadEnvironment
+ 108. file://localhost/mnt/hdb/boutell/cgic/cgic.html#variables
+ 109. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringSpaceNeeded
+ 110. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 111. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormTruncated
+ 112. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 113. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormString
+ 114. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 115. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 116. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 117. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 118. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 119. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormConstrained
+ 120. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormEmpty
+ 121. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormBadType
+ 122. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 123. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 124. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormConstrained
+ 125. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormEmpty
+ 126. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormBadType
+ 127. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 128. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 129. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 130. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNoSuchChoice
+ 131. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 132. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 133. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 134. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormRadio
+ 135. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 136. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 137. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNoSuchChoice
+ 138. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderLocation
+ 139. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderStatus
+ 140. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 141. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderLocation
+ 142. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderStatus
+ 143. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 144. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderLocation
+ 145. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderStatus
+ 146. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 147. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReadEnvironment
+ 148. file://localhost/mnt/hdb/boutell/cgic/cgic.html#variables
+ 149. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiIn
+ 150. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+ 151. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentSuccess
+ 152. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentIO
+ 153. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentMemory
+ 154. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiWriteEnvironment
+ 155. file://localhost/mnt/hdb/boutell/cgic/cgic.html#variables
+ 156. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiIn
+ 157. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+ 158. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentSuccess
+ 159. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentIO
+ 160. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentMemory
+ 161. file://localhost/mnt/hdb/boutell/cgic/cgic.html#howto
+ 162. file://localhost/mnt/hdb/boutell/cgic/cgic.html#debug
+ 163. file://localhost/mnt/hdb/boutell/cgic/cgic.html#howto
+ 164. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiAuthType
+ 165. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiIn
+ 166. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 167. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiUserAgent
+ 168. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 169. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiAccept
+ 170. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiAuthType
+ 171. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiContentLength
+ 172. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiContentType
+ 173. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentIO
+ 174. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentMemory
+ 175. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiEnvironmentSuccess
+ 176. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormBadType
+ 177. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxMultiple
+ 178. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormCheckboxSingle
+ 179. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormConstrained
+ 180. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDouble
+ 181. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormDoubleBounded
+ 182. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormEmpty
+ 183. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormInteger
+ 184. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormIntegerBounded
+ 185. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNoSuchChoice
+ 186. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormNotFound
+ 187. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormRadio
+ 188. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectMultiple
+ 189. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSelectSingle
+ 190. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormString
+ 191. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringMultiple
+ 192. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringNoNewlines
+ 193. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormStringSpaceNeeded
+ 194. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormSuccess
+ 195. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiFormTruncated
+ 196. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiGatewayInterface
+ 197. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderContentType
+ 198. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderLocation
+ 199. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiHeaderStatus
+ 200. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiIn
+ 201. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiMain
+ 202. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiOut
+ 203. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiPathInfo
+ 204. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiPathTranslated
+ 205. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiQueryString
+ 206. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReadEnvironment
+ 207. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiReferrer
+ 208. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteAddr
+ 209. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteHost
+ 210. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteIdent
+ 211. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRemoteUser
+ 212. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiRequestMethod
+ 213. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiScriptName
+ 214. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiServerName
+ 215. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiServerPort
+ 216. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiServerProtocol
+ 217. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiServerSoftware
+ 218. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiStringArrayFree
+ 219. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiUserAgent
+ 220. file://localhost/mnt/hdb/boutell/cgic/cgic.html#cgiWriteEnvironment
+ 221. http://www.boutell.com/
