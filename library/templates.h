@@ -1,6 +1,8 @@
 #define VAR_LENGTH      30
 #define VAR_VALUE       20000
 
+void new_var(struct List *,char *, char *);
+
 struct var_node {
     struct Node v_node;
     char v_name[VAR_LENGTH];

@@ -53,6 +53,8 @@
 #include "../library/queries.h"
 #include "../library/lists.h"
 #include "../library/args.h"
+#include "../library/text.h"
+#include "../library/templates.h"
 
 #define DAYS_NEW 15
 #define MAX_ENTRIES 400
