@@ -8,3 +8,4 @@
 char *getwhite_or_dash(char *start);
 void upper(char *);
 void lower(char *);
+char *str(int);
